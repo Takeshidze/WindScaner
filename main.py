@@ -1,8 +1,8 @@
 import json
-
+from visual import show_graph
 from geopy.distance import geodesic
 import math
-from api_req import get_data
+from api_req import get_data_openmeteo
 
 def calculate_azimuth(start_coords, end_coords):
     lat1, lon1 = start_coords
@@ -28,26 +28,38 @@ def calculate_azimuth(start_coords, end_coords):
 
     return normalized_azimuth
 
-start_coord = (55.924912, 37.891909)  # Начальные координаты (широта, долгота)
-end_coord = (55.925434, 37.816365)  # Конечные координаты (широта, долгота)
+start_coord = (55.755821, 37.617635)  # Начальные координаты (широта, долгота)
+end_coord = (55.703002, 37.530879)  # Конечные координаты (широта, долгота)
 step_distance = 100  # Шаг расстояния (в метрах)
+
+
 
 azi = calculate_azimuth(start_coord, end_coord)
 current_distance = 0
 current_coord = start_coord
 
-upload = []
+upload = {}
+upload["start_coord"] = start_coord
+upload["end_coord"] = end_coord
+upload["distance"] = geodesic(start_coord, end_coord).meters
+upload["data"] = []
 
 while current_distance < geodesic(start_coord, end_coord).meters:
-    print(current_coord)
-    data = get_data(current_coord)
-    upload.append(data)#
+    print(current_coord[0],current_coord[1])
+    data = get_data_openmeteo(current_coord[0], current_coord[1])
+    upload['data'].append(data)
     # Вычисляем следующую координату с учетом шага расстояния
     current_distance += step_distance
     current_coord = geodesic(start_coord, end_coord).destination(
         point=current_coord, bearing=azi, distance=0.1).format_decimal()
-
+    current_coord = tuple(map(float, current_coord.split(', ')))
+    print(current_coord[0], current_coord[1])
+    print(current_coord)
 # Создаем файл для записи результатов
 with open('result.json', 'w') as file:
     json.dump(upload, file)
 
+# with open('result.json', 'r') as file:
+#     data = json.load(file)
+# print(data)
+show_graph(upload)
